@@ -16,8 +16,8 @@ class Option():
             raise ValueError("Maturity must be positive")
         if self.vol <=0:
             raise ValueError("Volatility must be positive")
-        if self.rfr < 0:
-            raise ValueError("Risk-free rate must be non-negative") 
+        if self.rfr <= 0:
+            raise ValueError("Risk-free rate must be positive") 
         if self.up <=0:
             raise ValueError("Underlying price must be positive")
         
