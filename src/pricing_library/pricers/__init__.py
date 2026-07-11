@@ -1,3 +1,4 @@
 from .base import BasePricer
-__all__ = ["BasePricer"]
+from .black_sholes import BlackSholesVanillaPricer
+__all__ = ["BasePricer","BlackSholesVanillaPricer" ]
 

@@ -17,12 +17,6 @@ class Option():
     def is_put(self):
         return self.option_type =="put"
         
-    def payoff(self, UP_final : float):
-        if self.option_type =="call":
-            return max(UP_final - self.strike,0)
-        else:
-            return max(self.strike - UP_final,0)
-        
     def  __repr__(self):
         return (f"Option(type = {self.option_type}, strike = {self.strike}, maturity = {self.maturity})") 
     
@@ -44,5 +38,35 @@ class VanillaOption(Option):
 
         return max(self.strike - final_underlying_price, 0.0)
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return (f"VanillaOption(type={self.option_type!r}, "f"strike={self.strike}, maturity={self.maturity})")
+    
+
+class AmericanOption(VanillaOption):
+    def __repr__(self):
+        return (f"AmericanOption(type={self.option_type!r}, "f"strike={self.strike}, maturity={self.maturity})")
+    
+class AsianOption(Option):
+    def __init__(self,option_type : str, strike : float, maturity : float, averaging_method : str):
+        super().__init__(option_type, strike,maturity)  
+        self.averaging_method = averaging_method.lower()
+        if self.averaging_method not in {"arithmetic", "geometric"}:
+            raise ValueError("Averaging must be arithmetic or geometric")
+        
+    def __repr__(self):
+        return (f"AsianOption(type={self.option_type!r}, "f"strike={self.strike}, maturity={self.maturity}, averaging_method={self.averaging_method})")
+    
+class BarrierOption(Option):
+    def __init__(self,option_type : str, strike : float, maturity : float, barrier_type : str, barrier_level : float):
+        super().__init__(option_type,strike,maturity)
+        self.barrier_type = barrier_type.lower()
+        self.barrier_level = barrier_level 
+        if self.barrier_type not in {"up-and-in", "up-and-out", "down-and-in", "down-and-out"}:
+            raise ValueError("Enter a valid barrier type  : up-and-in,up-and-out,down-and-in, down-and-out")
+
+class SwingOption(Option):
+    def __init__(self,option_type : str, strike : float, maturity : float, number_of_exercises : int):
+        super().__init__(option_type,strike,maturity)
+        self.number_of_exercises = number_of_exercises
+        if self.number_of_exercises <= 0:
+            raise ValueError("Specify a valid number of exercises, it must be a positive number")
