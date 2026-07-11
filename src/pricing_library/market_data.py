@@ -17,7 +17,7 @@ class MarketData:
         return {"highest" : float(np.round(history['High'].max(),2)), "lowest" : float(np.round(history['Low'].min(),2)),}
     
     def get_price_latest(self):
-        history =self.get_history(period = "1d")
+        history =self.get_history(period = "3d")
         latest_price = history.iloc[-1]
         return {"close" : float(np.round(latest_price['Close'],2)),"open" : float(np.round(latest_price['Open'],2)),
                 "highest" : float(np.round(latest_price['High'],2)),"lowest" : float(np.round(latest_price['Low'],2)),}
