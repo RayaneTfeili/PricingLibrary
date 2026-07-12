@@ -1,6 +1,6 @@
 import numpy as np 
 from .base import BasePricer 
-from ..option import VanillaOption,AsianOption,BarrierOption 
+from ..option import VanillaOption,AsianOption,BarrierOption, AmericanOption, SwingOption
 
 class MonteCarloPricer(BasePricer):
     def __init__(self, option, spot_price : float, risk_free_rate : float, volatility : float, num_simulations : int, nums_step : int,seeds : int = 45):
@@ -65,5 +65,28 @@ class MonteCarloPricer(BasePricer):
                 payoffs = np.where(~barrier_hit,np.maximum(final_prices - self.option.strike,0) if self.option.is_call() else np.maximum(self.option.strike - final_prices,0),0)
                 discounted_payoff = np.exp(-self.risk_free_rate*self.option.maturity)*payoffs
             return np.round(np.mean(discounted_payoff),2) 
+        if isinstance(self.option,AmericanOption):
+            paths = self.path()
+            if self.option.is_call():
+                payoffs = np.maximum(paths[:,-1] - self.option.strike,0)
+            if self.option.is_put():
+                payoffs = np.maximum(self.option.strike - paths[:,-1],0) 
+            for t in range(self.nums_step-1,0,-1):
+                immediate_exercise = np.maximum(paths[:,t] - self.option.strike,0) if self.option.is_call() else np.maximum(self.option.strike - paths[:,t],0)
+                ITM = immediate_exercise > 0 
+                X = paths[ITM,t]
+                Y = payoffs[ITM]*np.exp(-self.risk_free_rate*(self.option.maturity/self.nums_step))
+                coeffs = np.polyfit(X, Y, deg=2)
+                continuation_value = np.polyval(coeffs, X)
+
+                exercise_now = immediate_exercise[ITM] > continuation_value
+
+                payoffs[ITM] = np.where(exercise_now,immediate_exercise[ITM],Y)
+
+            return np.round(np.mean(payoffs),2)
+      
         else: 
             raise TypeError("Now I only have implemented MC for Vanilla, Asian and Barrier options. New options coming soon")
+
+        if isinstance(self.option,SwingOption):
+            pass 
