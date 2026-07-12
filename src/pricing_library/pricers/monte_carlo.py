@@ -66,4 +66,4 @@ class MonteCarloPricer(BasePricer):
                 discounted_payoff = np.exp(-self.risk_free_rate*self.option.maturity)*payoffs
             return np.round(np.mean(discounted_payoff),2) 
         else: 
-            raise ValueError("Now I only have implemented MC for Vanilla, Asian and Barrier options. New options coming soon")
+            raise TypeError("Now I only have implemented MC for Vanilla, Asian and Barrier options. New options coming soon")
