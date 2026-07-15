@@ -7,23 +7,51 @@ class BlackSholesVanillaPricer(BasePricer):
     def __init__(self,option : VanillaOption, spot_price : float, risk_free_rate : float, volatility : float):
         super().__init__(option = option, spot_price = spot_price, risk_free_rate = risk_free_rate, volatility = volatility)
     
+    def _parameters(self):
+        return self.spot.price, self.option.strike, self.option.maturity, self.risk_free_rate, self.volatility
+    def _d1(self):
+        
+        S, K, T, r, vol = self._parameters()
+        return (np.log(S / K) + (r + 0.5 * vol**2) * T) / (vol * np.sqrt(T))
+    def _d2(self):
+        S, K, T, r, vol = self._parameters()
+        return self._d1() - vol * np.sqrt(T)
     def price(self):
-        S = self.spot_price
-        K = self.option.strike
-        T = self.option.maturity
-        r = self.risk_free_rate
-        vol = self.volatility
+        S, K,T,r,vol = self._parameters()
+        d1 = self._d1()
+        d2 = self._d2()
         if self.option.option_type == 'call':
-            d1 = (np.log(S/K) + (r+0.5*vol**2)*T)/(vol*np.sqrt(T))
-            d2 = d1 - vol*np.sqrt(T)
             price = S*norm.cdf(d1) - K*np.exp(-r*T)*norm.cdf(d2)
         elif self.option.option_type == 'put':
-            d1 = (np.log(S/K) + (r+0.5*vol**2)*T)/(vol*np.sqrt(T))
-            d2 = d1 - vol*np.sqrt(T)
             price = K*np.exp(-r*T)*norm.cdf(-d2) - S*norm.cdf(-d1)  
         else: 
             raise ValueError("Option must be a call or a put")
         return np.round(price,2) 
+    
+    def delta(self):
+        d1 = self._d1()
+        return norm.cdf(d1) if self.option.is_call() else norm.cdf(d1) -1 
+
+    def gamma(self):
+        d1 = self._d1()
+        S,K,T,r,vol = self._parameters()
+        return norm.pdf(d1)/(S*vol*np.sqrt(T))
+    
+    def vega(self):
+        d1 = self._d1()
+        S,K,T,r,vol = self._parameters()
+        return S*np.sqrt(T)*norm.pdf(d1)
+    
+    def theta(self):
+        d2 = self._d2()
+        S,K,T,r,vol = self._parameters()
+        d1= self._d1()
+        return (-S*norm.pdf(d1)*vol)/(2*np.sqrt(T)) - r *K*np.exp(-r*T)*norm.cdf(d2) if self.option.is_call() else (-S*norm.pdf(d1)*vol)/(2*np.sqrt(T)) + r *K*np.exp(-r*T)*norm.cdf(-d2)
+    def rho(self):
+        d2 = self._d2()
+        S,K,T,r,vol = self._parameters()
+        return K*T*np.exp(-r*T)*norm.cdf(d2) if self.option.is_call() else -K*T*np.exp(-r*T)*norm.cdf(-d2)
+
     
 class BinomialTreePricer(BasePricer):
     def __init__(self,option : AmericanOption, spot_price : float, risk_free_rate : float, volatility : float, num_steps : int):

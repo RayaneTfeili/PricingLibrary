@@ -24,12 +24,27 @@ class MonteCarloPricer(BasePricer):
         return paths
     
     def price(self):
-        if isinstance(self.option,VanillaOption):
+        if isinstance(self.option,AmericanOption):
+            print("Debugging")
             paths = self.path()
-            final_prices = paths[:,-1]
-            payoffs = np.maximum(final_prices - self.option.strike,0) if self.option.is_call() else np.maximum(self.option.strike -final_prices,0)
-            discounted_payoff = np.exp(-self.risk_free_rate*self.option.maturity)*payoffs 
-            return np.round(np.mean(discounted_payoff),2)
+            dt = self.option.maturity / self.nums_step
+            discount_factor = np.exp(-self.risk_free_rate * dt)
+            payoffs = np.maximum(paths[:, -1] - self.option.strike, 0) if self.option.is_call() else np.maximum(self.option.strike - paths[:, -1], 0)
+            for t in range(self.nums_step - 1, 0, -1):
+                payoffs = payoffs * discount_factor
+                immediate_exercise = np.maximum(paths[:, t] - self.option.strike, 0) if self.option.is_call() else np.maximum(self.option.strike - paths[:, t], 0)
+                ITM = immediate_exercise > 0
+                X = paths[ITM, t]
+                Y = payoffs[ITM]
+                coeffs = np.polyfit(X, Y, deg=2)
+                continuation_value = np.polyval(coeffs, X)
+                exercise_now = immediate_exercise[ITM] > continuation_value
+                payoffs[ITM] = np.where(exercise_now,immediate_exercise[ITM],payoffs[ITM],)
+
+            price = np.mean(payoffs)
+
+            return np.round(price, 2)
+        
         
         if isinstance(self.option,AsianOption):
             paths = self.path()
@@ -66,27 +81,35 @@ class MonteCarloPricer(BasePricer):
                 discounted_payoff = np.exp(-self.risk_free_rate*self.option.maturity)*payoffs
             return np.round(np.mean(discounted_payoff),2) 
         if isinstance(self.option,AmericanOption):
+            print("Debugging")
             paths = self.path()
-            if self.option.is_call():
-                payoffs = np.maximum(paths[:,-1] - self.option.strike,0)
-            if self.option.is_put():
-                payoffs = np.maximum(self.option.strike - paths[:,-1],0) 
-            for t in range(self.nums_step-1,0,-1):
-                immediate_exercise = np.maximum(paths[:,t] - self.option.strike,0) if self.option.is_call() else np.maximum(self.option.strike - paths[:,t],0)
-                ITM = immediate_exercise > 0 
-                X = paths[ITM,t]
-                Y = payoffs[ITM]*np.exp(-self.risk_free_rate*(self.option.maturity/self.nums_step))
+
+            dt = self.option.maturity / self.nums_step
+            discount_factor = np.exp(-self.risk_free_rate * dt)
+            payoffs = np.maximum(paths[:, -1] - self.option.strike, 0) if self.option.is_call() else np.maximum(self.option.strike - paths[:, -1], 0)
+            for t in range(self.nums_step - 1, 0, -1):
+                payoffs = payoffs * discount_factor
+                immediate_exercise = np.maximum(paths[:, t] - self.option.strike, 0) if self.option.is_call() else np.maximum(self.option.strike - paths[:, t], 0)
+                ITM = immediate_exercise > 0
+                X = paths[ITM, t]
+                Y = payoffs[ITM]
                 coeffs = np.polyfit(X, Y, deg=2)
                 continuation_value = np.polyval(coeffs, X)
-
                 exercise_now = immediate_exercise[ITM] > continuation_value
+                payoffs[ITM] = np.where(exercise_now,immediate_exercise[ITM],payoffs[ITM],)
 
-                payoffs[ITM] = np.where(exercise_now,immediate_exercise[ITM],Y)
+            price = np.mean(payoffs)
 
-            return np.round(np.mean(payoffs),2)
-      
+            return np.round(price, 2)
+        if isinstance(self.option,SwingOption):
+           pass 
+        if isinstance(self.option,VanillaOption):
+            paths = self.path()
+            final_prices = paths[:,-1]
+            payoffs = np.maximum(final_prices - self.option.strike,0) if self.option.is_call() else np.maximum(self.option.strike -final_prices,0)
+            discounted_payoff = np.exp(-self.risk_free_rate*self.option.maturity)*payoffs 
+            return np.round(np.mean(discounted_payoff),2)
         else: 
             raise TypeError("Now I only have implemented MC for Vanilla, Asian and Barrier options. New options coming soon")
 
-        if isinstance(self.option,SwingOption):
-            pass 
+        
