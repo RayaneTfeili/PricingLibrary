@@ -43,7 +43,7 @@ class MonteCarloPricer(BasePricer):
 
             price = np.mean(payoffs)
 
-            return np.round(price, 2)
+            return price
         
         
         if isinstance(self.option,AsianOption):
@@ -54,7 +54,7 @@ class MonteCarloPricer(BasePricer):
                 average_prices = np.exp(np.mean(np.log(paths[:,1:]),axis = 1))
             payoffs = np.maximum(average_prices - self.option.strike,0) if self.option.is_call() else np.maximum(self.option.strike - average_prices,0)
             discounted_payoff = np.exp(-self.risk_free_rate*self.option.maturity)*payoffs 
-            return np.round(np.mean(discounted_payoff),2)
+            return np.mean(discounted_payoff)
         
         if isinstance(self.option,BarrierOption): 
             paths = self.path()
@@ -79,7 +79,7 @@ class MonteCarloPricer(BasePricer):
                 final_prices = paths[:,-1]
                 payoffs = np.where(~barrier_hit,np.maximum(final_prices - self.option.strike,0) if self.option.is_call() else np.maximum(self.option.strike - final_prices,0),0)
                 discounted_payoff = np.exp(-self.risk_free_rate*self.option.maturity)*payoffs
-            return np.round(np.mean(discounted_payoff),2) 
+            return np.mean(discounted_payoff)
         if isinstance(self.option,AmericanOption):
             print("Debugging")
             paths = self.path()
@@ -100,7 +100,7 @@ class MonteCarloPricer(BasePricer):
 
             price = np.mean(payoffs)
 
-            return np.round(price, 2)
+            return  np.mean(payoffs)
         if isinstance(self.option,SwingOption):
            pass 
         if isinstance(self.option,VanillaOption):
@@ -108,8 +108,29 @@ class MonteCarloPricer(BasePricer):
             final_prices = paths[:,-1]
             payoffs = np.maximum(final_prices - self.option.strike,0) if self.option.is_call() else np.maximum(self.option.strike -final_prices,0)
             discounted_payoff = np.exp(-self.risk_free_rate*self.option.maturity)*payoffs 
-            return np.round(np.mean(discounted_payoff),2)
+            return np.mean(discounted_payoff)
         else: 
             raise TypeError("Now I only have implemented MC for Vanilla, Asian and Barrier options. New options coming soon")
 
-        
+    def delta(self, h : float = 0.01):
+        bump_up = MonteCarloPricer(self.option, self.spot_price+h, self.risk_free_rate,self.volatility, self.num_simulations, self.nums_step,self.seeds).price()
+        bump_down =  MonteCarloPricer(self.option, self.spot_price-h, self.risk_free_rate,self.volatility, self.num_simulations, self.nums_step,self.seeds).price()
+        return (bump_up - bump_down)/(2*h) 
+
+    def gamma(self, h:float = 0.01):
+        bump_up = MonteCarloPricer(self.option, self.spot_price+h, self.risk_free_rate,self.volatility, self.num_simulations, self.nums_step,self.seeds).price()
+        bump_down =  MonteCarloPricer(self.option, self.spot_price-h, self.risk_free_rate,self.volatility, self.num_simulations, self.nums_step,self.seeds).price()
+        in_between = MonteCarloPricer(self.option, self.spot_price, self.risk_free_rate,self.volatility, self.num_simulations, self.nums_step,self.seeds).price()
+        return (bump_up-2*in_between  + bump_down)/h**2 
+    
+    def vega(self, h: float =0.01):
+        bump_up = MonteCarloPricer(self.option, self.spot_price, self.risk_free_rate,self.volatility+h, self.num_simulations, self.nums_step,self.seeds).price()
+        bump_down =  MonteCarloPricer(self.option, self.spot_price, self.risk_free_rate,self.volatility-h, self.num_simulations, self.nums_step,self.seeds).price()
+        return (bump_up - bump_down)/(2*h)
+    def rho(self,h : float =0.01):
+        bump_up = MonteCarloPricer(self.option, self.spot_price, self.risk_free_rate+h,self.volatility, self.num_simulations, self.nums_step,self.seeds).price()
+        bump_down = MonteCarloPricer(self.option, self.spot_price, self.risk_free_rate-h,self.volatility, self.num_simulations, self.nums_step,self.seeds).price()
+        return (bump_up - bump_down)/(2*h)
+ 
+
+

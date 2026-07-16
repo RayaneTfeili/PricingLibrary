@@ -8,7 +8,7 @@ class BlackSholesVanillaPricer(BasePricer):
         super().__init__(option = option, spot_price = spot_price, risk_free_rate = risk_free_rate, volatility = volatility)
     
     def _parameters(self):
-        return self.spot.price, self.option.strike, self.option.maturity, self.risk_free_rate, self.volatility
+        return self.spot_price, self.option.strike, self.option.maturity, self.risk_free_rate, self.volatility
     def _d1(self):
         
         S, K, T, r, vol = self._parameters()
