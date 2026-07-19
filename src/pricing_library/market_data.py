@@ -22,3 +22,10 @@ class MarketData:
         return {"close" : float(np.round(latest_price['Close'],2)),"open" : float(np.round(latest_price['Open'],2)),
                 "highest" : float(np.round(latest_price['High'],2)),"lowest" : float(np.round(latest_price['Low'],2)),}
     
+    def get_historical_vol(self,period = "1y"):
+        history = self.get_history(period = period)
+        close_price = history["Close"]
+        log_return = np.log(close_price/close_price.shift(1)).dropna()
+        hist_vol = log_return.std() * np.sqrt(252)
+        return hist_vol 
+

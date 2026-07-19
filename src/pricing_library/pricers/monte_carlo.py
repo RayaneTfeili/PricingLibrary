@@ -2,7 +2,7 @@ import numpy as np
 from .base import BasePricer 
 from ..option import VanillaOption,AsianOption,BarrierOption, AmericanOption, SwingOption
 
-class MonteCarloPricer(BasePricer):
+class MCPricer(BasePricer):
     def __init__(self, option, spot_price : float, risk_free_rate : float, volatility : float, num_simulations : int, nums_step : int,seeds : int = 45):
         super().__init__(option = option, spot_price = spot_price, risk_free_rate = risk_free_rate, volatility = volatility)
         self.num_simulations = num_simulations 
@@ -113,23 +113,23 @@ class MonteCarloPricer(BasePricer):
             raise TypeError("Now I only have implemented MC for Vanilla, Asian and Barrier options. New options coming soon")
 
     def delta(self, h : float = 0.01):
-        bump_up = MonteCarloPricer(self.option, self.spot_price+h, self.risk_free_rate,self.volatility, self.num_simulations, self.nums_step,self.seeds).price()
-        bump_down =  MonteCarloPricer(self.option, self.spot_price-h, self.risk_free_rate,self.volatility, self.num_simulations, self.nums_step,self.seeds).price()
+        bump_up = MCPricer(self.option, self.spot_price+h, self.risk_free_rate,self.volatility, self.num_simulations, self.nums_step,self.seeds).price()
+        bump_down =  MCPricer(self.option, self.spot_price-h, self.risk_free_rate,self.volatility, self.num_simulations, self.nums_step,self.seeds).price()
         return (bump_up - bump_down)/(2*h) 
 
     def gamma(self, h:float = 0.01):
-        bump_up = MonteCarloPricer(self.option, self.spot_price+h, self.risk_free_rate,self.volatility, self.num_simulations, self.nums_step,self.seeds).price()
-        bump_down =  MonteCarloPricer(self.option, self.spot_price-h, self.risk_free_rate,self.volatility, self.num_simulations, self.nums_step,self.seeds).price()
-        in_between = MonteCarloPricer(self.option, self.spot_price, self.risk_free_rate,self.volatility, self.num_simulations, self.nums_step,self.seeds).price()
+        bump_up = MCPricer(self.option, self.spot_price+h, self.risk_free_rate,self.volatility, self.num_simulations, self.nums_step,self.seeds).price()
+        bump_down =  MCPricer(self.option, self.spot_price-h, self.risk_free_rate,self.volatility, self.num_simulations, self.nums_step,self.seeds).price()
+        in_between = MCPricer(self.option, self.spot_price, self.risk_free_rate,self.volatility, self.num_simulations, self.nums_step,self.seeds).price()
         return (bump_up-2*in_between  + bump_down)/h**2 
     
     def vega(self, h: float =0.01):
-        bump_up = MonteCarloPricer(self.option, self.spot_price, self.risk_free_rate,self.volatility+h, self.num_simulations, self.nums_step,self.seeds).price()
-        bump_down =  MonteCarloPricer(self.option, self.spot_price, self.risk_free_rate,self.volatility-h, self.num_simulations, self.nums_step,self.seeds).price()
+        bump_up = MCPricer(self.option, self.spot_price, self.risk_free_rate,self.volatility+h, self.num_simulations, self.nums_step,self.seeds).price()
+        bump_down =  MCPricer(self.option, self.spot_price, self.risk_free_rate,self.volatility-h, self.num_simulations, self.nums_step,self.seeds).price()
         return (bump_up - bump_down)/(2*h)
     def rho(self,h : float =0.01):
-        bump_up = MonteCarloPricer(self.option, self.spot_price, self.risk_free_rate+h,self.volatility, self.num_simulations, self.nums_step,self.seeds).price()
-        bump_down = MonteCarloPricer(self.option, self.spot_price, self.risk_free_rate-h,self.volatility, self.num_simulations, self.nums_step,self.seeds).price()
+        bump_up = MCPricer(self.option, self.spot_price, self.risk_free_rate+h,self.volatility, self.num_simulations, self.nums_step,self.seeds).price()
+        bump_down = MCPricer(self.option, self.spot_price, self.risk_free_rate-h,self.volatility, self.num_simulations, self.nums_step,self.seeds).price()
         return (bump_up - bump_down)/(2*h)
  
 

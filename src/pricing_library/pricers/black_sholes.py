@@ -2,8 +2,9 @@ from .base import BasePricer
 from ..option import VanillaOption, AmericanOption, AsianOption, BarrierOption, SwingOption 
 import numpy as np
 from scipy.stats import norm
+from scipy.stats import brentq 
 
-class BlackSholesVanillaPricer(BasePricer):
+class BSPricer(BasePricer):
     def __init__(self,option : VanillaOption, spot_price : float, risk_free_rate : float, volatility : float):
         super().__init__(option = option, spot_price = spot_price, risk_free_rate = risk_free_rate, volatility = volatility)
     
@@ -28,6 +29,14 @@ class BlackSholesVanillaPricer(BasePricer):
             raise ValueError("Option must be a call or a put")
         return np.round(price,2) 
     
+    def implied_vol(self,market_price : float):
+        def find(vol):
+            pricer = BSPricer(option = self.option, spot_price = self.spot_price,risk_free_rate = self.risk_free_rate, volatility = vol)
+            return pricer.price() - market_price 
+        try:
+            return brentq(find,0.001,1.0,maxiter = 1000)
+        except ValueError:
+            return brentq(find,0.001,3.0,maxiter = 1000)
     def delta(self):
         d1 = self._d1()
         return norm.cdf(d1) if self.option.is_call() else norm.cdf(d1) -1 
@@ -53,7 +62,7 @@ class BlackSholesVanillaPricer(BasePricer):
         return K*T*np.exp(-r*T)*norm.cdf(d2) if self.option.is_call() else -K*T*np.exp(-r*T)*norm.cdf(-d2)
 
     
-class BinomialTreePricer(BasePricer):
+class BTPricer(BasePricer):
     def __init__(self,option : AmericanOption, spot_price : float, risk_free_rate : float, volatility : float, num_steps : int):
         super().__init__(option = option, spot_price = spot_price, risk_free_rate = risk_free_rate, volatility = volatility)
         self.num_steps = num_steps
