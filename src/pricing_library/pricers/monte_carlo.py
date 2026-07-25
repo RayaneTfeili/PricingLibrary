@@ -36,14 +36,14 @@ class MCPricer(BasePricer):
         path2[:,0]= S0 
         for j in range(1,self.nums_step+1):
             z=  rng.standard_normal(self.num_simulations)
-            path1[:,j] = path1[:,j-1] * np.exp(R-(vol**2)/2 * dt + vol *np.sqrt(dt)* z) 
-            path2[:,j] = path2[:,j-1] * np.exp(R-(vol**2)/2 * dt + vol *np.sqrt(dt)* -z)
+            path1[:,j] = path1[:,j-1] * np.exp((R-(vol**2)/2) * dt + vol *np.sqrt(dt)* z) 
+            path2[:,j] = path2[:,j-1] * np.exp((R-(vol**2)/2)* dt + vol *np.sqrt(dt)* -z)
         return path1,path2 
     def payoff_from_path(self,path):
+        paths = path
         if isinstance(self.option, AmericanOption):
             raise TypeError("We are using Long-Scharwtz method for the american option")
         if isinstance(self.option, AsianOption):
-            paths = self.path()
             if self.option.averaging_method == "arithmetic":
                 average_prices = np.mean(paths[:, 1:], axis=1)
             else:
@@ -51,7 +51,6 @@ class MCPricer(BasePricer):
             payoffs = np.maximum(average_prices - self.option.strike, 0) if self.option.is_call() else np.maximum(self.option.strike - average_prices, 0)
             return payoffs
         if isinstance(self.option, BarrierOption):
-            paths = self.path()
             final_prices = paths[:, -1]
             if self.option.barrier_type == "up-and-in":
                 barrier_hit = np.any(paths[:, 1:] >= self.option.barrier_level, axis=1)
@@ -69,7 +68,6 @@ class MCPricer(BasePricer):
             payoffs = np.where(active, payoffs, 0)
             return payoffs 
         if isinstance(self.option, VanillaOption):
-            paths = self.path()
             final_prices = paths[:, -1]
             payoffs = np.maximum(final_prices - self.option.strike, 0) if self.option.is_call() else np.maximum(self.option.strike - final_prices, 0)
             return payoffs 
